@@ -8,8 +8,8 @@ import Data.Either (hush)
 import Data.Function (on)
 import Data.Identity (Identity)
 import Data.Maybe (Maybe(..))
-import Data.String.CodeUnits as CodeUnits
-import Data.String.Utils (lines, toCharArray)
+import Data.String.CodeUnits (toCharArray)
+import Data.String.Utils (lines)
 import Data.Tuple (Tuple(..), uncurry)
 import Effect (Effect)
 import Effect.Console (logShow)
@@ -17,48 +17,44 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
 import Text.Parsing.Parser (Parser, runParser)
 import Text.Parsing.Parser.Language (emptyDef)
-import Text.Parsing.Parser.Token (GenLanguageDef(..), GenTokenParser, letter, makeTokenParser, unGenLanguageDef)
+import Text.Parsing.Parser.Token (GenTokenParser, letter, makeTokenParser)
 
-type PasswordPolicy = { min :: Int, max :: Int, char :: String }
+type PasswordPolicy = { min :: Int, max :: Int, char :: Char }
+type Password = Tuple PasswordPolicy (Array Char)
+type Validator = PasswordPolicy -> Array Char -> Boolean
 
 -- Parsing
 def :: GenTokenParser String Identity
-def = makeTokenParser $ LanguageDef (unGenLanguageDef emptyDef)
-  { identStart      = letter
-  , identLetter     = letter
-  , reservedOpNames = ["-", ":"]
-  }
+def = makeTokenParser emptyDef
 
 policy :: Parser String PasswordPolicy
-policy = do
+policy = ado
   min <- def.natural
   def.reservedOp "-"
   max <- def.natural 
   char <- letter
-  pure { min, max, char: CodeUnits.singleton char }
+  in { min, max, char }
 
-line :: Parser String (Tuple PasswordPolicy String)
-line = do
+line :: Parser String Password
+line = ado
   currentPolicy <- policy
   def.reservedOp ":"
   password <- def.identifier
-  pure $ Tuple currentPolicy password
+  in Tuple currentPolicy (toCharArray password)
 
-parse :: String -> (Array (Tuple PasswordPolicy String))
+parse :: String -> Array Password
 parse = catMaybes <<< map (hush <<< flip runParser line) <<< lines
 
 -- Solution
-validPassword :: PasswordPolicy -> String -> Boolean
-validPassword { min, max, char } s = l >= min && l <= max
-  where l = length $ filter ((==) char) $ toCharArray s 
+validPassword :: Validator
+validPassword { min, max, char } chars = l >= min && l <= max
+  where l = length $ filter ((==) char) chars
 
-validPassword' :: PasswordPolicy -> String -> Boolean
-validPassword' { min, max, char } s = on notEq (\i -> Just char == Array.index charArray (i - 1)) min max
-  where
-  charArray = toCharArray s
+validPassword' :: Validator
+validPassword' { min, max, char } chars = on notEq (\i -> Just char == Array.index chars (i - 1)) min max
 
-solve :: (PasswordPolicy -> String -> Boolean) -> Array (Tuple PasswordPolicy String) -> Int
-solve validator = length <<< filter (uncurry validator)
+solve :: Validator -> Array Password -> Int
+solve validator = length <<< filter (uncurry validator) 
 
 main :: Effect Unit
 main = do
