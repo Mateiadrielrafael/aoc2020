@@ -8,9 +8,8 @@ import Data.Either (hush)
 import Data.Function (on)
 import Data.Identity (Identity)
 import Data.Maybe (Maybe(..))
-import Data.String (Pattern(..), split)
 import Data.String.CodeUnits as CodeUnits
-import Data.String.Utils (toCharArray)
+import Data.String.Utils (lines, toCharArray)
 import Data.Tuple (Tuple(..), uncurry)
 import Effect (Effect)
 import Effect.Console (logShow)
@@ -18,7 +17,6 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Sync (readTextFile)
 import Text.Parsing.Parser (Parser, runParser)
 import Text.Parsing.Parser.Language (emptyDef)
-import Text.Parsing.Parser.String (oneOf)
 import Text.Parsing.Parser.Token (GenLanguageDef(..), GenTokenParser, letter, makeTokenParser, unGenLanguageDef)
 
 type PasswordPolicy = { min :: Int, max :: Int, char :: String }
@@ -29,15 +27,13 @@ def = makeTokenParser $ LanguageDef (unGenLanguageDef emptyDef)
   { identStart      = letter
   , identLetter     = letter
   , reservedOpNames = ["-", ":"]
-  , opStart = oneOf ['-', ':']
-  , opLetter = oneOf ['-', ':']
   }
 
 policy :: Parser String PasswordPolicy
 policy = do
-  min <- def.integer
+  min <- def.natural
   def.reservedOp "-"
-  max <- def.integer 
+  max <- def.natural 
   char <- letter
   pure { min, max, char: CodeUnits.singleton char }
 
@@ -49,7 +45,7 @@ line = do
   pure $ Tuple currentPolicy password
 
 parse :: String -> (Array (Tuple PasswordPolicy String))
-parse =  catMaybes <<< map (hush <<< flip runParser line) <<< split (Pattern "\n") 
+parse = catMaybes <<< map (hush <<< flip runParser line) <<< lines
 
 -- Solution
 validPassword :: PasswordPolicy -> String -> Boolean
