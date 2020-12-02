@@ -1,1 +1,14 @@
+# Input files
 days/*/input.txt
+
+# Purs stuff
+bower_components/
+node_modules/
+.pulp-cache/
+output/
+generated-docs/
+.psc-package/
+.psc*
+.purs*
+.psa*
+.spago

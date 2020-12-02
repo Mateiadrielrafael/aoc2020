@@ -1,4 +1,4 @@
-{ name = "2"
+{ name = "n"
 , dependencies =
   [ "console"
   , "debug"
