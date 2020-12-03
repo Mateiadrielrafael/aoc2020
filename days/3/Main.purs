@@ -20,22 +20,9 @@ import Node.FS.Sync (readTextFile)
 type CharArray = Array Char
 
 type MapData = Boolean
-type TreeMap = Array (Array Boolean)
+type TreeMatrix = Array (Array Boolean)
 type Vec2 = Vec D2 Int
-type TreeMapSlice = Vec2 -> Maybe MapData
-
--- Utility stuff
-translate :: Vec2 -> TreeMapSlice -> TreeMapSlice
-translate vec lookup position = lookup (vec + position) 
-
-toSlice :: TreeMap -> TreeMapSlice 
-toSlice m position = do
-  width <- length <$> head m
-  line <- m !! y
-  line !! (x `mod` width)
-  where
-  x = Vec.index position d0 
-  y = Vec.index position d1
+type TreeMap = Vec2 -> Maybe MapData
 
 -- Parsing
 parseLine :: CharArray -> Array MapData
@@ -44,11 +31,23 @@ parseLine chars = flip mapMaybe chars case _ of
   '.' -> Just false
   _ -> Nothing
 
-parseMap :: String -> TreeMap
+parseMap :: String -> TreeMatrix
 parseMap s = lines s <#> toCharArray <#> parseLine
 
 -- Solution
-unfoldPosition :: Vec2 -> TreeMapSlice -> Int
+translate :: Vec2 -> TreeMap -> TreeMap
+translate vec lookup position = lookup (vec + position) 
+
+lookupMatrix :: TreeMatrix -> Vec2 -> Maybe MapData 
+lookupMatrix m position = do
+  width <- length <$> head m
+  line <- m !! y
+  line !! (x `mod` width)
+  where
+  x = Vec.index position d0 
+  y = Vec.index position d1
+
+unfoldPosition :: Vec2 -> TreeMap -> Int
 unfoldPosition slope = go
   where 
   go lookup = case lookup slope of
@@ -63,13 +62,14 @@ slopes =
   , vec2 7 1
   , vec2 1 2 ]
 
-solve :: TreeMapSlice -> BigInt.BigInt
-solve treeMap = bigProduct $ slopes <#> (\slope -> unfoldPosition slope treeMap) 
+solve :: TreeMap -> BigInt.BigInt
+solve treeMap = bigProduct $ go <$> slopes 
   where
   bigProduct = map BigInt.fromInt >>> product
+  go slope = unfoldPosition slope treeMap
 
 main :: Effect Unit
 main = do
   content <- readTextFile UTF8 "input.txt"
-  let slice = toSlice $ parseMap content
+  let slice = lookupMatrix $ parseMap content
   logShow $ solve slice
