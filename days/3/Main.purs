@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Array (head, length, mapMaybe, (!!))
 import Data.BigInt as BigInt
+import Data.Enum (fromEnum)
 import Data.Foldable (product)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String.CodeUnits (toCharArray)
@@ -18,9 +19,8 @@ import Node.FS.Sync (readTextFile)
 
 type CharArray = Array Char
 
-data MapData = Tree | Grass
-
-type TreeMap = Array (Array MapData)
+type MapData = Boolean
+type TreeMap = Array (Array Boolean)
 type Vec2 = Vec D2 Int
 type TreeMapSlice = Vec2 -> Maybe MapData
 
@@ -29,7 +29,7 @@ mapWidth :: TreeMap -> Int
 mapWidth = maybe 0 length <<< head
 
 translate :: Vec2 -> TreeMapSlice -> TreeMapSlice
-translate vec lookup position = lookup (vec + position)
+translate vec lookup position = lookup (vec + position) 
 
 toSlice :: TreeMap -> TreeMapSlice 
 toSlice m position = m !! y >>= (_ !! x)
@@ -41,8 +41,8 @@ toSlice m position = m !! y >>= (_ !! x)
 -- Parsing
 parseLine :: CharArray -> Array MapData
 parseLine chars = flip mapMaybe chars case _ of
-  '#' -> Just Tree
-  '.' -> Just Grass
+  '#' -> Just true
+  '.' -> Just false
   _ -> Nothing
 
 parseMap :: String -> TreeMap
@@ -50,11 +50,11 @@ parseMap s = lines s <#> toCharArray <#> parseLine
 
 -- Solution
 unfoldPosition :: Vec2 -> TreeMapSlice -> Int
-unfoldPosition slope lookup = case lookup slope of
-  Nothing -> 0
-  Just data' -> unfoldPosition slope (translate slope lookup) + case data' of
-    Tree -> 1
-    Grass -> 0
+unfoldPosition slope = go
+  where 
+  go lookup = case lookup slope of
+    Nothing -> 0
+    Just isTree -> go (translate slope lookup) + fromEnum isTree
 
 slopes :: Array Vec2
 slopes =
