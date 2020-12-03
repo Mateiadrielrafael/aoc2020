@@ -6,7 +6,7 @@ import Data.Array (head, length, mapMaybe, (!!))
 import Data.BigInt as BigInt
 import Data.Enum (fromEnum)
 import Data.Foldable (product)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..))
 import Data.String.CodeUnits (toCharArray)
 import Data.String.Utils (lines)
 import Data.Typelevel.Num (D2, d0, d1)
@@ -25,18 +25,17 @@ type Vec2 = Vec D2 Int
 type TreeMapSlice = Vec2 -> Maybe MapData
 
 -- Utility stuff
-mapWidth :: TreeMap -> Int
-mapWidth = maybe 0 length <<< head
-
 translate :: Vec2 -> TreeMapSlice -> TreeMapSlice
 translate vec lookup position = lookup (vec + position) 
 
 toSlice :: TreeMap -> TreeMapSlice 
-toSlice m position = m !! y >>= (_ !! x)
+toSlice m position = do
+  width <- length <$> head m
+  line <- m !! y
+  line !! (x `mod` width)
   where
-  x = Vec.index position d0 `mod` width
+  x = Vec.index position d0 
   y = Vec.index position d1
-  width = mapWidth m
 
 -- Parsing
 parseLine :: CharArray -> Array MapData
