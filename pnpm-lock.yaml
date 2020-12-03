@@ -1,0 +1,12 @@
+dependencies:
+  big-integer: 1.6.48
+lockfileVersion: 5.1
+packages:
+  /big-integer/1.6.48:
+    dev: false
+    engines:
+      node: '>=0.6'
+    resolution:
+      integrity: sha512-j51egjPa7/i+RdiRuJbPdJ2FIUYYPhvYLjzoYbcMMm62ooO6F94fETG4MTs46zPAF9Brs04OajboA/qTGuz78w==
+specifiers:
+  big-integer: ^1.6.48

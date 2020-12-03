@@ -1,13 +1,15 @@
-{ name = "2"
+{ name = "3"
 , dependencies =
-  [ "console"
+  [ "bigints"
+  , "console"
   , "debug"
   , "effect"
   , "node-fs"
   , "parsing"
-  , "partial"
   , "psci-support"
+  , "sized-vectors"
   , "stringutils"
+  , "undefined"
   ]
 , packages = ../../packages.dhall
 , sources = [ "Main.purs" ]
