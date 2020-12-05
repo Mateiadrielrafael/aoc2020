@@ -15,7 +15,8 @@ import Data.HashMap as Map
 import Data.Identity (Identity)
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..))
-import Data.Newtype (class Newtype, unwrap)
+import Data.Monoid.Conj (Conj(..))
+import Data.Newtype (unwrap)
 import Data.String.CodeUnits (fromCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
@@ -30,19 +31,11 @@ import Text.Parsing.Parser.Token (GenTokenParser, alphaNum, digit, makeTokenPars
 type Passport = HashMap String String
 
 -- Validators with semigroup instances
-newtype FieldValidator = FieldValidator (Passport -> Boolean)
-
-instance filedValidatorSemigroup :: Semigroup FieldValidator where
-  append (FieldValidator a) (FieldValidator b) = FieldValidator \input -> a input && b input
-
-instance fieldValidatorMonoid :: Monoid FieldValidator where
-  mempty = FieldValidator (const true)
-
-derive instance fieldValidatorNewtype :: Newtype FieldValidator _ 
+type FieldValidator = Passport -> Conj Boolean
 
 -- Helpers for validating
 validateKey :: String -> (String -> Boolean) -> FieldValidator
-validateKey key validate = FieldValidator \input -> case Map.lookup key input of
+validateKey key validate input = Conj case Map.lookup key input of
   Just value -> validate value
   Nothing -> false
 
@@ -99,7 +92,7 @@ validPassport passport = 7 == Map.size withoutCid
   withoutCid = Map.filterKeys ((/=) "cid") passport
 
 validatePassport' :: Passport -> Boolean
-validatePassport' = unwrap $ fold [byr, iyr, eyr, hgt, hcl, ecl, pid]
+validatePassport' = unwrap <$> fold [byr, iyr, eyr, hgt, hcl, ecl, pid]
   where
   byr = validateKey "byr" $ validateInt \year -> year >= 1920 && year <= 2002
   iyr = validateKey "iyr" $ validateInt \year -> year >= 2010 && year <= 2020
