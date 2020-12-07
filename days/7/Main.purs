@@ -33,7 +33,7 @@ def = makeTokenParser emptyDef
 
 parseBagDeclaration :: Parser String Bag
 parseBagDeclaration = do
-  name <- parseBagDescriptor
+  name <- bagName
   void $ def.symbol "bags contain"
   content <- try noOtherBags <|> def.commaSep1 bagContent
   void def.dot
@@ -45,12 +45,12 @@ parseBagDeclaration = do
   bagContent :: Parser String (Tuple String Int)
   bagContent = do
     amount <- def.natural
-    name <- parseBagDescriptor
+    name <- bagName
     void $ def.symbol if amount == 1 then "bag" else "bags"
     pure $ Tuple name amount
 
-  parseBagDescriptor :: Parser String String
-  parseBagDescriptor = ado 
+  bagName :: Parser String String
+  bagName = ado 
     a <- def.identifier 
     b <- def.identifier
     in a <> " " <> b
@@ -75,8 +75,7 @@ solve :: MapEnv -> Int
 solve env 
   = Map.filterKeys go env # Map.size
   where 
-  go key = contains' key "shiny gold"
-  contains' = contains env
+  go key = contains env key "shiny gold"
 
 childrenCount :: MapEnv -> String -> Int 
 childrenCount env = memoize self
